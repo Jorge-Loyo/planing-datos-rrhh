@@ -33,3 +33,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.neon
+
+# Config local de MCP (cada quien configura su servidor; puede llevar flags de entorno)
+.kiro/settings/

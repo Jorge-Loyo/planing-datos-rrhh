@@ -14,6 +14,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@neon/config": "^1.9.5",
+    "@neon/env": "^1.6.6",
     "@neondatabase/serverless": "^0.10.4",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",

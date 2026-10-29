@@ -39,7 +39,7 @@ conectan a Neon, anteponer `NODE_TLS_REJECT_UNAUTHORIZED=0` si aparece
 
 1. (hecha) Base: login, roles, perfil, admin de usuarios, estructura de páginas.
 2. (hecha) Kanban/Planner (drag&drop HTML5 nativo) + Backlog (con promover a tarea) + Prioridades (afiche máx 5) + Carga del equipo.
-3. Reuniones + Conceptos + Definición de terminado.
+3. (hecha) Reuniones + Conceptos (glosario con búsqueda) + Definición de terminado (tipos + criterios checklist).
 4. Archivos (Drive con versiones) + Equipo + Dashboard con datos reales.
 
 ## Notas de implementación
@@ -48,6 +48,7 @@ conectan a Neon, anteponer `NODE_TLS_REJECT_UNAUTHORIZED=0` si aparece
 - Etiquetas/estados centralizados en `src/lib/dominio.ts`. Helpers de datos en `src/lib/consultas.ts`.
 - Dev local corre en el puerto 3100 (el 3000 lo ocupa wslrelay.exe de WSL).
 - Para correr: `NODE_TLS_REJECT_UNAUTHORIZED=0 npx next dev -p 3100`.
+- No correr `next build` con el dev server activo: compiten por `.next` y el build falla con "Cannot find module for page". Detener el dev server (o `rm -rf .next`) antes de buildear.
 
 ## Modelo de datos (resumen)
 
