@@ -41,7 +41,9 @@ conectan a Neon, anteponer `NODE_TLS_REJECT_UNAUTHORIZED=0` si aparece
 1. (hecha) Base: login, roles, perfil, admin de usuarios, estructura de páginas.
 2. (hecha) Kanban/Planner (drag&drop HTML5 nativo) + Backlog (con promover a tarea) + Prioridades (afiche máx 5) + Carga del equipo.
 3. (hecha) Reuniones + Conceptos (glosario con búsqueda) + Definición de terminado (tipos + criterios checklist).
-4. Archivos (Drive con versiones) + Equipo + Dashboard con datos reales.
+4. (hecha) Archivos (recursos con enlaces de Drive y versiones vigente/histórico) + Equipo + Dashboard con datos reales (contadores, próximas fechas, bloqueos, prioridades).
+
+TODAS LAS ETAPAS COMPLETAS. La app está funcional de punta a punta contra Neon.
 
 ## Notas de implementación
 

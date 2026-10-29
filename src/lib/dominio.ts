@@ -86,3 +86,20 @@ export const COLOR_ESTADO_BACKLOG: Record<
   descartado: "red",
   promovido: "green",
 };
+
+export const TIPOS_RECURSO = [
+  "fuente",
+  "script",
+  "documento",
+  "manual",
+  "otro",
+] as const;
+export type TipoRecurso = (typeof TIPOS_RECURSO)[number];
+
+export const ETIQUETA_TIPO_RECURSO: Record<TipoRecurso, string> = {
+  fuente: "Fuente",
+  script: "Script",
+  documento: "Documento",
+  manual: "Manual",
+  otro: "Otro",
+};
