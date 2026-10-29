@@ -1,42 +1,45 @@
-import { PageHeader, EmptyState } from "@/components/ui";
+import { db } from "@/db";
+import { tareas } from "@/db/schema";
+import { asc } from "drizzle-orm";
+import { obtenerSesion } from "@/lib/auth";
+import { puedeEditar } from "@/lib/permisos";
+import { listarUsuariosActivos } from "@/lib/consultas";
+import { KanbanBoard, type TareaKanban } from "./KanbanBoard";
 
-const COLUMNAS = [
-  { estado: "pendiente", titulo: "Pendiente" },
-  { estado: "en_curso", titulo: "En curso" },
-  { estado: "bloqueada", titulo: "Bloqueada" },
-  { estado: "lista", titulo: "Lista" },
-];
+export const dynamic = "force-dynamic";
 
-export default function KanbanPage() {
+export default async function KanbanPage() {
+  const sesion = await obtenerSesion();
+  if (!sesion) return null;
+
+  const [filas, usuarios] = await Promise.all([
+    db
+      .select()
+      .from(tareas)
+      .orderBy(asc(tareas.orden), asc(tareas.id)),
+    listarUsuariosActivos(),
+  ]);
+
+  const tareasKanban: TareaKanban[] = filas.map((t) => ({
+    id: t.id,
+    titulo: t.titulo,
+    descripcion: t.descripcion ?? "",
+    estado: t.estado,
+    prioridad: t.prioridad,
+    responsableId: t.responsableId,
+    segundaPersonaId: t.segundaPersonaId,
+    fechaInicio: t.fechaInicio,
+    fechaLimite: t.fechaLimite,
+    criterioTerminado: t.criterioTerminado ?? "",
+    observaciones: t.observaciones ?? "",
+    orden: t.orden,
+  }));
+
   return (
-    <div>
-      <PageHeader
-        titulo="Kanban / Planner"
-        descripcion="Tablero único donde vive todo lo que el equipo tiene en marcha."
-      />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {COLUMNAS.map((c) => (
-          <div key={c.estado} className="rounded-xl bg-slate-100 p-3">
-            <div className="mb-3 flex items-center justify-between px-1">
-              <h3 className="text-sm font-semibold text-slate-700">{c.titulo}</h3>
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">
-                0
-              </span>
-            </div>
-            <div className="space-y-2">
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white/60 p-4 text-center text-xs text-slate-400">
-                Sin tareas
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-6">
-        <EmptyState
-          titulo="El Kanban se habilita en la Etapa 2"
-          descripcion="Acá vas a poder crear tareas, asignar responsables y arrastrarlas entre columnas."
-        />
-      </div>
-    </div>
+    <KanbanBoard
+      tareasIniciales={tareasKanban}
+      usuarios={usuarios}
+      puedeEditar={puedeEditar(sesion.rol)}
+    />
   );
 }
