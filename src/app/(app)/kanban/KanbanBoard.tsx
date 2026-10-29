@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Badge, PageHeader } from "@/components/ui";
 import { cn, formatearFecha, diasRestantes } from "@/lib/utils";
-import { nombreUsuario, type UsuarioMin } from "@/lib/consultas";
+import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import {
   ESTADOS_TAREA,
   ETIQUETA_ESTADO,

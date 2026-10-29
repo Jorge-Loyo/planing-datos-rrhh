@@ -1,13 +1,12 @@
+// Consultas de SERVIDOR (tocan la base de datos). No importar desde componentes
+// con "use client": arrastraría el driver de la base al navegador.
 import { db } from "@/db";
 import { usuarios } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
+import type { UsuarioMin } from "@/lib/usuarios";
 
-export interface UsuarioMin {
-  id: number;
-  nombre: string;
-  apellido: string;
-  cuil: string;
-}
+export type { UsuarioMin } from "@/lib/usuarios";
+export { nombreUsuario } from "@/lib/usuarios";
 
 // Lista de usuarios activos para selects de responsable/segunda persona.
 export async function listarUsuariosActivos(): Promise<UsuarioMin[]> {
@@ -22,14 +21,4 @@ export async function listarUsuariosActivos(): Promise<UsuarioMin[]> {
     .where(eq(usuarios.activo, true))
     .orderBy(asc(usuarios.apellido), asc(usuarios.nombre));
   return filas;
-}
-
-export function nombreUsuario(u?: {
-  nombre?: string | null;
-  apellido?: string | null;
-  cuil?: string | null;
-} | null): string {
-  if (!u) return "Sin asignar";
-  const nc = `${u.nombre ?? ""} ${u.apellido ?? ""}`.trim();
-  return nc || u.cuil || "Sin asignar";
 }

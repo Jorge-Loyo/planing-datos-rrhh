@@ -18,6 +18,7 @@ Tablero de control de actividades para el equipo de Datos RRHH (área del GCBA).
 - Validar permisos SIEMPRE en el servidor (no alcanza con ocultar el menú).
   Usar los helpers de `src/lib/permisos.ts`.
 - Componentes UI reutilizables en `src/components/ui.tsx`.
+- IMPORTANTE separación cliente/servidor: NUNCA importar `@/db` ni `@/lib/consultas` desde un componente con `"use client"` (arrastra el driver de Postgres al navegador y rompe con "Falta DATABASE_URL"). Los tipos/helpers puros de usuario van en `@/lib/usuarios` (seguro para cliente); las consultas a la base en `@/lib/consultas` (solo servidor).
 - Fechas: usar helpers de `src/lib/utils.ts` (formatearFecha, diasRestantes).
 
 ## Roles (jerarquía)

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Card, PageHeader, EmptyState } from "@/components/ui";
 import { formatearFecha } from "@/lib/utils";
-import { nombreUsuario, type UsuarioMin } from "@/lib/consultas";
+import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
 
 export interface ConceptoUI {

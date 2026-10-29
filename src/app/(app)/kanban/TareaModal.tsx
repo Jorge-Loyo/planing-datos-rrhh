@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Input, Label } from "@/components/ui";
-import { nombreUsuario, type UsuarioMin } from "@/lib/consultas";
+import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import {
   ESTADOS_TAREA,
   ETIQUETA_ESTADO,
