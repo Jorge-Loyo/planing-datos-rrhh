@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Label, Card, Badge, PageHeader } from "@/components/ui";
+import { Button, Input, Label, Card, Badge, PageHeader, ReadOnlyNotice } from "@/components/ui";
+import { useConfirm } from "@/components/confirm";
 import { formatearFecha } from "@/lib/utils";
 import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import {
@@ -47,7 +48,9 @@ export function BacklogTabla({
   puedeCoordinar: boolean;
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [form, setForm] = useState(false);
+  const [creando, setCreando] = useState(false);
   const [pedido, setPedido] = useState("");
   const [areaSolicitante, setArea] = useState("");
   const [decisionQueApoya, setDecision] = useState("");
@@ -89,28 +92,33 @@ export function BacklogTabla({
   async function crear(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    const res = await fetch("/api/backlog", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pedido,
-        areaSolicitante,
-        decisionQueApoya,
-        impacto: impacto || null,
-        esfuerzo: esfuerzo || null,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setPedido("");
-      setArea("");
-      setDecision("");
-      setImpacto("");
-      setEsfuerzo("");
-      setForm(false);
-      router.refresh();
-    } else {
-      setError(data.error || "No se pudo crear.");
+    setCreando(true);
+    try {
+      const res = await fetch("/api/backlog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pedido,
+          areaSolicitante,
+          decisionQueApoya,
+          impacto: impacto || null,
+          esfuerzo: esfuerzo || null,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPedido("");
+        setArea("");
+        setDecision("");
+        setImpacto("");
+        setEsfuerzo("");
+        setForm(false);
+        router.refresh();
+      } else {
+        setError(data.error || "No se pudo crear.");
+      }
+    } finally {
+      setCreando(false);
     }
   }
 
@@ -129,7 +137,13 @@ export function BacklogTabla({
   }
 
   async function eliminar(id: number) {
-    if (!confirm("¿Eliminar este pedido del backlog?")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar pedido",
+      mensaje: "Se quitará del backlog. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
     await fetch(`/api/backlog?id=${id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -154,6 +168,8 @@ export function BacklogTabla({
           </Button>
         )}
       </PageHeader>
+
+      {!puedeEditar && !puedeCoordinar && <ReadOnlyNotice />}
 
       {form && (
         <Card className="mb-6">
@@ -214,7 +230,9 @@ export function BacklogTabla({
               </div>
             )}
             <div className="sm:col-span-2">
-              <Button type="submit">Agregar al backlog</Button>
+              <Button type="submit" cargando={creando}>
+                Agregar al backlog
+              </Button>
             </div>
           </form>
         </Card>
@@ -506,8 +524,8 @@ function PromoverModal({
             <Button type="button" variant="secondary" onClick={onCerrar}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardando}>
-              {guardando ? "Promoviendo..." : "Promover a tarea"}
+            <Button type="submit" cargando={guardando}>
+              Promover a tarea
             </Button>
           </div>
         </form>

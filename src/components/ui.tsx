@@ -1,12 +1,21 @@
 import { cn } from "@/lib/utils";
+import { Loader2, Lock } from "lucide-react";
 import { ButtonHTMLAttributes, InputHTMLAttributes, forwardRef } from "react";
+
+export function Spinner({ className }: { className?: string }) {
+  return <Loader2 className={cn("animate-spin", className)} size={16} />;
+}
 
 export function Button({
   className,
   variant = "primary",
+  cargando = false,
+  children,
+  disabled,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "danger";
+  cargando?: boolean;
 }) {
   const base =
     "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed";
@@ -16,23 +25,53 @@ export function Button({
     ghost: "text-slate-600 hover:bg-slate-100",
     danger: "bg-red-600 text-white hover:bg-red-700",
   };
-  return <button className={cn(base, variants[variant], className)} {...props} />;
+  return (
+    <button
+      className={cn(base, variants[variant], className)}
+      disabled={disabled || cargando}
+      {...props}
+    >
+      {cargando && <Spinner />}
+      {children}
+    </button>
+  );
 }
 
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-  function Input({ className, ...props }, ref) {
-    return (
-      <input
-        ref={ref}
-        className={cn(
-          "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100",
-          className
-        )}
-        {...props}
-      />
-    );
-  }
-);
+// Aviso para usuarios con rol Consulta (solo lectura)
+export function ReadOnlyNotice({ texto }: { texto?: string }) {
+  return (
+    <div className="mb-4 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+      <Lock size={15} />
+      {texto ??
+        "Tenés acceso de solo lectura. Para crear o editar, pedí a un administrador que cambie tu rol."}
+    </div>
+  );
+}
+
+export const Input = forwardRef<
+  HTMLInputElement,
+  InputHTMLAttributes<HTMLInputElement> & { error?: boolean }
+>(function Input({ className, error, ...props }, ref) {
+  return (
+    <input
+      ref={ref}
+      aria-invalid={error || undefined}
+      className={cn(
+        "w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2",
+        error
+          ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+          : "border-slate-300 focus:border-brand-500 focus:ring-brand-100",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+
+export function FieldError({ children }: { children?: React.ReactNode }) {
+  if (!children) return null;
+  return <p className="mt-1 text-xs text-red-600">{children}</p>;
+}
 
 export function Label({
   children,

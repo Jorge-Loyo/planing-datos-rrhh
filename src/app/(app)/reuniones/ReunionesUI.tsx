@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Label, Card, PageHeader, EmptyState } from "@/components/ui";
+import { Button, Input, Label, Card, PageHeader, EmptyState, ReadOnlyNotice } from "@/components/ui";
+import { useConfirm } from "@/components/confirm";
 import { formatearFecha } from "@/lib/utils";
 import { Plus, Pencil, Trash2, X, CalendarDays } from "lucide-react";
 
@@ -27,6 +28,7 @@ export function ReunionesUI({
   puedeEditar: boolean;
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<ReunionUI | null>(null);
 
@@ -40,7 +42,13 @@ export function ReunionesUI({
   }
 
   async function eliminar(id: number) {
-    if (!confirm("¿Eliminar esta reunión?")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar reunión",
+      mensaje: "Se borrará el registro de esta reunión. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
     await fetch(`/api/reuniones?id=${id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -57,6 +65,8 @@ export function ReunionesUI({
           </Button>
         )}
       </PageHeader>
+
+      {!puedeEditar && <ReadOnlyNotice />}
 
       {itemsIniciales.length === 0 ? (
         <EmptyState
@@ -281,8 +291,8 @@ function ReunionModal({
             <Button type="button" variant="secondary" onClick={onCerrar}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardando}>
-              {guardando ? "Guardando..." : reunion ? "Guardar cambios" : "Crear reunión"}
+            <Button type="submit" cargando={guardando}>
+              {reunion ? "Guardar cambios" : "Crear reunión"}
             </Button>
           </div>
         </form>

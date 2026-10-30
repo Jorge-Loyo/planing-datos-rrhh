@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Label, Card, PageHeader, EmptyState } from "@/components/ui";
+import { Button, Input, Label, Card, PageHeader, EmptyState, ReadOnlyNotice } from "@/components/ui";
+import { useConfirm } from "@/components/confirm";
 import { formatearFecha } from "@/lib/utils";
 import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
@@ -27,6 +28,7 @@ export function ConceptosUI({
   puedeEditar: boolean;
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<ConceptoUI | null>(null);
   const [filtro, setFiltro] = useState("");
@@ -39,7 +41,13 @@ export function ConceptosUI({
   );
 
   async function eliminar(id: number) {
-    if (!confirm("¿Eliminar este concepto?")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar concepto",
+      mensaje: "Se quitará del glosario. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
     await fetch(`/api/conceptos?id=${id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -61,6 +69,8 @@ export function ConceptosUI({
           </Button>
         )}
       </PageHeader>
+
+      {!puedeEditar && <ReadOnlyNotice />}
 
       {itemsIniciales.length > 0 && (
         <div className="mb-4 relative max-w-sm">
@@ -321,8 +331,8 @@ function ConceptoModal({
             <Button type="button" variant="secondary" onClick={onCerrar}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardando}>
-              {guardando ? "Guardando..." : concepto ? "Guardar cambios" : "Crear concepto"}
+            <Button type="submit" cargando={guardando}>
+              {concepto ? "Guardar cambios" : "Crear concepto"}
             </Button>
           </div>
         </form>

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Label, Card, PageHeader, EmptyState } from "@/components/ui";
+import { Button, Input, Label, Card, PageHeader, EmptyState, ReadOnlyNotice } from "@/components/ui";
+import { useConfirm } from "@/components/confirm";
 import { formatearFecha } from "@/lib/utils";
 import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import { NIVELES_AFICHE, ETIQUETA_PRIORIDAD, type NivelAfiche } from "@/lib/dominio";
@@ -28,6 +29,7 @@ export function AficheprioridadesUI({
   puedeCoordinar: boolean;
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const activas = itemsIniciales.filter((p) => p.activa);
   const archivadas = itemsIniciales.filter((p) => !p.activa);
   const mapaUsuarios = new Map(usuarios.map((u) => [u.id, u]));
@@ -69,9 +71,12 @@ export function AficheprioridadesUI({
     setForm(true);
   }
 
+  const [guardando, setGuardando] = useState(false);
+
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setGuardando(true);
     const payload = {
       nivel,
       queEs,
@@ -98,6 +103,7 @@ export function AficheprioridadesUI({
     } else {
       setError(data.error || "No se pudo guardar.");
     }
+    setGuardando(false);
   }
 
   async function archivar(id: number, activa: boolean) {
@@ -115,7 +121,13 @@ export function AficheprioridadesUI({
   }
 
   async function eliminar(id: number) {
-    if (!confirm("¿Eliminar esta prioridad?")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar prioridad",
+      mensaje: "Se quitará del afiche. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
     await fetch(`/api/prioridades?id=${id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -132,6 +144,10 @@ export function AficheprioridadesUI({
           </Button>
         )}
       </PageHeader>
+
+      {!puedeCoordinar && (
+        <ReadOnlyNotice texto="Las prioridades las define un líder o administrador. Vos podés verlas." />
+      )}
 
       <div className="mb-4 flex items-center gap-2 text-sm text-slate-500">
         <Flag size={16} className="text-brand-600" />
@@ -206,7 +222,7 @@ export function AficheprioridadesUI({
               </div>
             )}
             <div className="sm:col-span-2 flex gap-2">
-              <Button type="submit">
+              <Button type="submit" cargando={guardando}>
                 {editId ? "Guardar cambios" : "Agregar prioridad"}
               </Button>
               <Button

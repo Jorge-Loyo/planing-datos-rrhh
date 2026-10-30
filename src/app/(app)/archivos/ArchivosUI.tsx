@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Label, Card, Badge, PageHeader, EmptyState } from "@/components/ui";
+import { Button, Input, Label, Card, Badge, PageHeader, EmptyState, ReadOnlyNotice } from "@/components/ui";
+import { useConfirm } from "@/components/confirm";
 import { formatearFecha } from "@/lib/utils";
 import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import {
@@ -48,6 +49,7 @@ export function ArchivosUI({
   puedeEditar: boolean;
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<RecursoUI | null>(null);
   const [verHistorico, setVerHistorico] = useState<Record<number, boolean>>({});
@@ -55,7 +57,13 @@ export function ArchivosUI({
   const mapaUsuarios = new Map(usuarios.map((u) => [u.id, u]));
 
   async function eliminarRecurso(id: number) {
-    if (!confirm("¿Eliminar este recurso y todas sus versiones?")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar recurso",
+      mensaje: "Se eliminará el recurso y todas sus versiones. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
     await fetch(`/api/recursos?id=${id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -68,7 +76,13 @@ export function ArchivosUI({
     router.refresh();
   }
   async function eliminarVersion(versionId: number) {
-    if (!confirm("¿Eliminar esta versión?")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar versión",
+      mensaje: "Se eliminará esta versión del historial. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
     await fetch("/api/recursos", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -94,6 +108,8 @@ export function ArchivosUI({
           </Button>
         )}
       </PageHeader>
+
+      {!puedeEditar && <ReadOnlyNotice />}
 
       {itemsIniciales.length === 0 ? (
         <EmptyState
@@ -454,8 +470,8 @@ function RecursoModal({
             <Button type="button" variant="secondary" onClick={onCerrar}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardando}>
-              {guardando ? "Guardando..." : recurso ? "Guardar cambios" : "Crear recurso"}
+            <Button type="submit" cargando={guardando}>
+              {recurso ? "Guardar cambios" : "Crear recurso"}
             </Button>
           </div>
         </form>
@@ -567,8 +583,8 @@ function VersionModal({
             <Button type="button" variant="secondary" onClick={onCerrar}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardando}>
-              {guardando ? "Guardando..." : "Agregar versión"}
+            <Button type="submit" cargando={guardando}>
+              Agregar versión
             </Button>
           </div>
         </form>

@@ -28,27 +28,33 @@ export function AdminUsuarios({ inicial }: { inicial: UsuarioRow[] }) {
   const [rol, setRol] = useState<Rol>("miembro");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
+  const [creando, setCreando] = useState(false);
 
   async function crear(e: React.FormEvent) {
     e.preventDefault();
     setMsg("");
-    const res = await fetch("/api/usuarios", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cuil, nombre, apellido, email, rol, password }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setCuil("");
-      setNombre("");
-      setApellido("");
-      setEmail("");
-      setRol("miembro");
-      setPassword("");
-      setMostrarForm(false);
-      router.refresh();
-    } else {
-      setMsg(data.error || "No se pudo crear el usuario.");
+    setCreando(true);
+    try {
+      const res = await fetch("/api/usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cuil, nombre, apellido, email, rol, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCuil("");
+        setNombre("");
+        setApellido("");
+        setEmail("");
+        setRol("miembro");
+        setPassword("");
+        setMostrarForm(false);
+        router.refresh();
+      } else {
+        setMsg(data.error || "No se pudo crear el usuario.");
+      }
+    } finally {
+      setCreando(false);
     }
   }
 
@@ -144,7 +150,9 @@ export function AdminUsuarios({ inicial }: { inicial: UsuarioRow[] }) {
               </div>
             )}
             <div className="sm:col-span-2">
-              <Button type="submit">Crear usuario</Button>
+              <Button type="submit" cargando={creando}>
+                Crear usuario
+              </Button>
             </div>
           </form>
         </Card>

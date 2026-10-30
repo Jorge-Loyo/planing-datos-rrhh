@@ -60,6 +60,7 @@ function LoginForm() {
               placeholder="20000000001"
               value={cuil}
               onChange={(e) => setCuil(e.target.value)}
+              error={!!error}
               autoFocus
               required
             />
@@ -71,6 +72,7 @@ function LoginForm() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              error={!!error}
               required
             />
           </div>
@@ -81,8 +83,8 @@ function LoginForm() {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={cargando}>
-            {cargando ? "Ingresando..." : "Ingresar"}
+          <Button type="submit" className="w-full" cargando={cargando}>
+            Ingresar
           </Button>
         </form>
       </Card>

@@ -268,8 +268,8 @@ export function TareaModal({
             <Button type="button" variant="secondary" onClick={onCerrar}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardando}>
-              {guardando ? "Guardando..." : tarea ? "Guardar cambios" : "Crear tarea"}
+            <Button type="submit" cargando={guardando}>
+              {tarea ? "Guardar cambios" : "Crear tarea"}
             </Button>
           </div>
         </form>

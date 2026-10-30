@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Badge, PageHeader } from "@/components/ui";
+import { Button, Badge, PageHeader, ReadOnlyNotice } from "@/components/ui";
+import { useConfirm } from "@/components/confirm";
 import { cn, formatearFecha, diasRestantes } from "@/lib/utils";
 import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import {
@@ -50,6 +51,7 @@ export function KanbanBoard({
   puedeEditar: boolean;
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [tareas, setTareas] = useState<TareaKanban[]>(tareasIniciales);
   const [arrastrada, setArrastrada] = useState<number | null>(null);
   const [columnaSobre, setColumnaSobre] = useState<EstadoTarea | null>(null);
@@ -114,7 +116,13 @@ export function KanbanBoard({
   }
 
   async function eliminar(id: number) {
-    if (!confirm("¿Eliminar esta tarea?")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar tarea",
+      mensaje: "Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
     await fetch(`/api/tareas?id=${id}`, { method: "DELETE" });
     setTareas((prev) => prev.filter((t) => t.id !== id));
     router.refresh();
@@ -141,6 +149,8 @@ export function KanbanBoard({
           </Button>
         )}
       </PageHeader>
+
+      {!puedeEditar && <ReadOnlyNotice />}
 
       {/* Filtros */}
       <div className="mb-4 flex flex-wrap items-center gap-3">

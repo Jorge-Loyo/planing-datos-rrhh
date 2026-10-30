@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Card, PageHeader, EmptyState } from "@/components/ui";
+import { Button, Input, Card, PageHeader, EmptyState, ReadOnlyNotice } from "@/components/ui";
+import { useConfirm } from "@/components/confirm";
 import { Plus, Trash2, Check, X, ListChecks } from "lucide-react";
 
 export interface CriterioUI {
@@ -24,7 +25,9 @@ export function DefinicionUI({
   puedeEditar: boolean;
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [nuevoTipo, setNuevoTipo] = useState(false);
+  const [creandoTipo, setCreandoTipo] = useState(false);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [error, setError] = useState("");
@@ -34,24 +37,35 @@ export function DefinicionUI({
   async function crearTipo(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    const res = await fetch("/api/tipos-entregable", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, descripcion }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setNombre("");
-      setDescripcion("");
-      setNuevoTipo(false);
-      router.refresh();
-    } else {
-      setError(data.error || "No se pudo crear.");
+    setCreandoTipo(true);
+    try {
+      const res = await fetch("/api/tipos-entregable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, descripcion }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNombre("");
+        setDescripcion("");
+        setNuevoTipo(false);
+        router.refresh();
+      } else {
+        setError(data.error || "No se pudo crear.");
+      }
+    } finally {
+      setCreandoTipo(false);
     }
   }
 
   async function eliminarTipo(id: number) {
-    if (!confirm("¿Eliminar este tipo de entregable y todos sus criterios?")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar tipo de entregable",
+      mensaje: "Se eliminará junto con todos sus criterios. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
     await fetch(`/api/tipos-entregable?id=${id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -94,6 +108,8 @@ export function DefinicionUI({
         )}
       </PageHeader>
 
+      {!puedeEditar && <ReadOnlyNotice />}
+
       {nuevoTipo && puedeEditar && (
         <Card className="mb-6">
           <form onSubmit={crearTipo} className="grid gap-4 sm:grid-cols-2">
@@ -123,7 +139,9 @@ export function DefinicionUI({
               </div>
             )}
             <div className="sm:col-span-2">
-              <Button type="submit">Crear tipo</Button>
+              <Button type="submit" cargando={creandoTipo}>
+                Crear tipo
+              </Button>
             </div>
           </form>
         </Card>
