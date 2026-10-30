@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { obtenerSesion } from "@/lib/auth";
 import { puedeEditar } from "@/lib/permisos";
 import { ESTADOS_TAREA, type EstadoTarea } from "@/lib/dominio";
+import { sincronizarBacklogDeTarea } from "@/lib/sync-backlog";
 
 // Reordena/mueve tareas. Recibe el estado destino y la lista ordenada de ids
 // de esa columna tras el drop. Asigna orden incremental a cada una.
@@ -34,6 +35,9 @@ export async function POST(req: NextRequest) {
         .where(eq(tareas.id, id))
     )
   );
+
+  // Sincroniza el reflejo en el Backlog (el estado cambió)
+  await Promise.all(ids.map((id: number) => sincronizarBacklogDeTarea(id)));
 
   return NextResponse.json({ ok: true });
 }

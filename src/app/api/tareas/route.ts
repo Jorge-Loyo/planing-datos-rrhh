@@ -10,6 +10,10 @@ import {
   type EstadoTarea,
   type PrioridadTarea,
 } from "@/lib/dominio";
+import {
+  crearBacklogParaTarea,
+  sincronizarBacklogDeTarea,
+} from "@/lib/sync-backlog";
 
 function limpiarTexto(v: unknown): string {
   return String(v ?? "").trim();
@@ -53,6 +57,9 @@ export async function POST(req: NextRequest) {
     .where(eq(tareas.estado, estado));
   const orden = (maxOrden[0]?.max ?? 0) + 1;
 
+  // Si la tarea viene de un item de backlog existente, se respeta ese vínculo.
+  const backlogIdOrigen = idOnull(body.backlogId);
+
   const [creada] = await db
     .insert(tareas)
     .values({
@@ -66,10 +73,23 @@ export async function POST(req: NextRequest) {
       fechaLimite: fechaOnull(body.fechaLimite),
       criterioTerminado: limpiarTexto(body.criterioTerminado),
       observaciones: limpiarTexto(body.observaciones),
+      backlogId: backlogIdOrigen,
       orden,
       creadoPorId: sesion.id,
     })
     .returning({ id: tareas.id });
+
+  // Opción B: si la tarea NO proviene de un item de backlog, se crea su reflejo
+  // en el Backlog para que éste muestre todo lo que el equipo tiene en marcha.
+  if (!backlogIdOrigen) {
+    await crearBacklogParaTarea({
+      tareaId: creada.id,
+      titulo,
+      descripcion: limpiarTexto(body.descripcion),
+      estado,
+      creadoPorId: sesion.id,
+    });
+  }
 
   return NextResponse.json({ ok: true, id: creada.id });
 }
@@ -142,6 +162,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   await db.update(tareas).set(cambios).where(eq(tareas.id, id));
+
+  // Mantener sincronizado el reflejo en el Backlog (estado/título)
+  if (cambios.estado !== undefined || cambios.titulo !== undefined) {
+    await sincronizarBacklogDeTarea(id);
+  }
+
   return NextResponse.json({ ok: true });
 }
 

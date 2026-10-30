@@ -11,10 +11,13 @@ import {
   ETIQUETA_ESCALA,
   ETIQUETA_ESTADO_BACKLOG,
   COLOR_ESTADO_BACKLOG,
+  ETIQUETA_ESTADO,
+  COLOR_ESTADO,
   NIVELES_AFICHE,
   ETIQUETA_PRIORIDAD,
   type Escala,
   type EstadoBacklog,
+  type EstadoTarea,
   type NivelAfiche,
 } from "@/lib/dominio";
 import { Plus, Trash2, ArrowUpRight, Search, X } from "lucide-react";
@@ -29,6 +32,7 @@ export interface ItemBacklogUI {
   esfuerzo: Escala | null;
   estado: EstadoBacklog;
   fechaIngreso: string;
+  estadoTareaKanban: EstadoTarea | null;
 }
 
 // Peso para ordenar por impacto/esfuerzo
@@ -296,6 +300,7 @@ export function BacklogTabla({
                 <th className="px-4 py-3 font-medium">Esfuerzo</th>
                 <th className="px-4 py-3 font-medium">Ingreso</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium">En Kanban</th>
                 {(puedeEditar || puedeCoordinar) && (
                   <th className="px-4 py-3 font-medium">Acciones</th>
                 )}
@@ -348,6 +353,15 @@ export function BacklogTabla({
                       </Badge>
                     )}
                   </td>
+                  <td className="px-4 py-3">
+                    {it.estadoTareaKanban ? (
+                      <Badge color={COLOR_ESTADO[it.estadoTareaKanban]}>
+                        {ETIQUETA_ESTADO[it.estadoTareaKanban]}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </td>
                   {(puedeEditar || puedeCoordinar) && (
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -377,7 +391,7 @@ export function BacklogTabla({
               {visibles.length === 0 && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-4 py-6 text-center text-sm text-slate-400"
                   >
                     No hay pedidos que coincidan con el filtro.

@@ -103,3 +103,20 @@ export const ETIQUETA_TIPO_RECURSO: Record<TipoRecurso, string> = {
   manual: "Manual",
   otro: "Otro",
 };
+
+export const DIAS_SEMANA = [
+  "lunes",
+  "martes",
+  "miercoles",
+  "jueves",
+  "viernes",
+] as const;
+export type DiaSemana = (typeof DIAS_SEMANA)[number];
+
+export const ETIQUETA_DIA: Record<DiaSemana, string> = {
+  lunes: "Lunes",
+  martes: "Martes",
+  miercoles: "Miércoles",
+  jueves: "Jueves",
+  viernes: "Viernes",
+};

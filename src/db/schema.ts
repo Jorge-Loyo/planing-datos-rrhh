@@ -240,6 +240,30 @@ export const versionesRecurso = pgTable("versiones_recurso", {
 });
 
 // ---------------------------------------------------------------------------
+// Tareas fijas semanales (plantillas que se generan cada semana)
+// ---------------------------------------------------------------------------
+
+export const diaSemanaEnum = pgEnum("dia_semana", [
+  "lunes",
+  "martes",
+  "miercoles",
+  "jueves",
+  "viernes",
+]);
+
+export const tareasFijas = pgTable("tareas_fijas", {
+  id: serial("id").primaryKey(),
+  titulo: text("titulo").notNull(),
+  descripcion: text("descripcion").default(""),
+  responsableId: integer("responsable_id").references(() => usuarios.id),
+  diaSemana: diaSemanaEnum("dia_semana"),
+  criterioTerminado: text("criterio_terminado").default(""),
+  activa: boolean("activa").notNull().default(true),
+  creadoPorId: integer("creado_por_id").references(() => usuarios.id),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
 // Relaciones (para consultas con joins comodos)
 // ---------------------------------------------------------------------------
 
@@ -308,3 +332,4 @@ export type Recurso = typeof recursos.$inferSelect;
 export type VersionRecurso = typeof versionesRecurso.$inferSelect;
 export type TipoEntregable = typeof tiposEntregable.$inferSelect;
 export type CriterioTerminado = typeof criteriosTerminado.$inferSelect;
+export type TareaFija = typeof tareasFijas.$inferSelect;

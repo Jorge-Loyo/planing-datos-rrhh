@@ -9,6 +9,7 @@ import { ETIQUETA_ROL, puedeCoordinar, puedeAdministrar } from "@/lib/permisos";
 import {
   LayoutDashboard,
   KanbanSquare,
+  Repeat,
   Inbox,
   Flag,
   CalendarDays,
@@ -35,6 +36,7 @@ interface ItemNav {
 const ITEMS: ItemNav[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/kanban", label: "Kanban / Planner", icon: KanbanSquare },
+  { href: "/tareas-fijas", label: "Tareas fijas", icon: Repeat },
   { href: "/backlog", label: "Backlog", icon: Inbox },
   { href: "/prioridades", label: "Prioridades", icon: Flag },
   { href: "/reuniones", label: "Reuniones", icon: CalendarDays },
