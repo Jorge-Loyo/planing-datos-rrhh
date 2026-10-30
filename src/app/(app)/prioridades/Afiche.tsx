@@ -6,8 +6,17 @@ import { Button, Input, Label, Card, PageHeader, EmptyState, ReadOnlyNotice } fr
 import { useConfirm } from "@/components/confirm";
 import { formatearFecha } from "@/lib/utils";
 import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
-import { NIVELES_AFICHE, ETIQUETA_PRIORIDAD, type NivelAfiche } from "@/lib/dominio";
-import { Plus, Trash2, Pencil, Archive, Flag } from "lucide-react";
+import {
+  NIVELES_AFICHE,
+  ETIQUETA_PRIORIDAD,
+  ETIQUETA_ESTADO,
+  COLOR_ESTADO,
+  type NivelAfiche,
+  type EstadoTarea,
+} from "@/lib/dominio";
+import { Plus, Trash2, Pencil, Archive, Flag, KanbanSquare } from "lucide-react";
+import Link from "next/link";
+import { Badge } from "@/components/ui";
 
 export interface PrioridadUI {
   id: number;
@@ -19,12 +28,23 @@ export interface PrioridadUI {
   activa: boolean;
 }
 
+export interface TareaPriorizadaUI {
+  id: number;
+  titulo: string;
+  nivel: NivelAfiche;
+  estado: EstadoTarea;
+  responsableId: number | null;
+  fechaLimite: string | null;
+}
+
 export function AficheprioridadesUI({
   itemsIniciales,
+  tareasPriorizadas,
   usuarios,
   puedeCoordinar,
 }: {
   itemsIniciales: PrioridadUI[];
+  tareasPriorizadas: TareaPriorizadaUI[];
   usuarios: UsuarioMin[];
   puedeCoordinar: boolean;
 }) {
@@ -298,6 +318,84 @@ export function AficheprioridadesUI({
           })}
         </div>
       )}
+
+      {/* Tareas priorizadas del Kanban (automático, según la prioridad de cada tarea) */}
+      <div className="mt-8">
+        <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <KanbanSquare size={18} className="text-brand-600" /> Tareas priorizadas
+        </h2>
+        <p className="mb-3 text-sm text-slate-500">
+          Tareas del Kanban con prioridad asignada (P1 = más urgente). Se actualizan solas
+          según lo que marques en cada tarea.
+        </p>
+        {tareasPriorizadas.length === 0 ? (
+          <EmptyState
+            titulo="Ninguna tarea tiene prioridad asignada"
+            descripcion="Asigná una prioridad (P1 a P5) a las tareas desde el Kanban y van a aparecer acá."
+          />
+        ) : (
+          <div className="space-y-4">
+            {NIVELES_AFICHE.map((nivel) => {
+              const delNivel = tareasPriorizadas
+                .filter((t) => t.nivel === nivel)
+                .sort((a, b) =>
+                  (a.fechaLimite ?? "9999").localeCompare(b.fechaLimite ?? "9999")
+                );
+              if (delNivel.length === 0) return null;
+              return (
+                <div key={nivel}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span
+                      className={
+                        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold " +
+                        (nivel === "p1"
+                          ? "bg-red-100 text-red-700"
+                          : nivel === "p2"
+                          ? "bg-orange-100 text-orange-700"
+                          : nivel === "p3"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-slate-100 text-slate-600")
+                      }
+                    >
+                      <Flag size={11} /> {ETIQUETA_PRIORIDAD[nivel]}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {delNivel.length} tarea{delNivel.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {delNivel.map((t) => {
+                      const resp = t.responsableId
+                        ? mapaUsuarios.get(t.responsableId)
+                        : null;
+                      return (
+                        <Link
+                          key={t.id}
+                          href="/kanban"
+                          className="block rounded-lg border border-slate-200 bg-white p-3 transition hover:border-brand-300 hover:shadow-sm"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-sm font-medium text-slate-900">
+                              {t.titulo}
+                            </span>
+                            <Badge color={COLOR_ESTADO[t.estado]}>
+                              {ETIQUETA_ESTADO[t.estado]}
+                            </Badge>
+                          </div>
+                          <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+                            <span>{resp ? nombreUsuario(resp) : "Sin responsable"}</span>
+                            {t.fechaLimite && <span>{formatearFecha(t.fechaLimite)}</span>}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {archivadas.length > 0 && (
         <div className="mt-8">
