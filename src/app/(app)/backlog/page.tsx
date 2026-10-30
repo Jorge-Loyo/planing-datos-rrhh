@@ -18,30 +18,36 @@ export default async function BacklogPage() {
         id: tareas.id,
         estado: tareas.estado,
         backlogId: tareas.backlogId,
+        fechaLimite: tareas.fechaLimite,
+        responsableId: tareas.responsableId,
       })
       .from(tareas)
       .where(isNotNull(tareas.backlogId)),
   ]);
 
-  // Mapa backlogId -> estado de la tarea del Kanban
-  const estadoTareaPorBacklog = new Map(
+  // Mapa backlogId -> datos de la tarea del Kanban vinculada
+  const tareaPorBacklog = new Map(
     tareasVinculadas
       .filter((t) => t.backlogId != null)
-      .map((t) => [t.backlogId as number, t.estado])
+      .map((t) => [t.backlogId as number, t])
   );
 
-  const items: ItemBacklogUI[] = filas.map((b) => ({
-    id: b.id,
-    codigo: b.codigo,
-    pedido: b.pedido,
-    areaSolicitante: b.areaSolicitante ?? "",
-    decisionQueApoya: b.decisionQueApoya ?? "",
-    impacto: b.impacto,
-    esfuerzo: b.esfuerzo,
-    estado: b.estado,
-    fechaIngreso: b.fechaIngreso,
-    estadoTareaKanban: estadoTareaPorBacklog.get(b.id) ?? null,
-  }));
+  const items: ItemBacklogUI[] = filas.map((b) => {
+    const tv = tareaPorBacklog.get(b.id);
+    return {
+      id: b.id,
+      codigo: b.codigo,
+      pedido: b.pedido,
+      areaSolicitante: b.areaSolicitante ?? "",
+      decisionQueApoya: b.decisionQueApoya ?? "",
+      impacto: b.impacto,
+      esfuerzo: b.esfuerzo,
+      estado: b.estado,
+      fechaIngreso: b.fechaIngreso,
+      estadoTareaKanban: tv?.estado ?? null,
+      fechaLimiteTarea: tv?.fechaLimite ?? null,
+    };
+  });
 
   return (
     <BacklogTabla

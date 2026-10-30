@@ -8,6 +8,8 @@ import {
   ETIQUETA_ESTADO,
   PRIORIDADES,
   ETIQUETA_PRIORIDAD,
+  ESCALAS,
+  ETIQUETA_ESCALA,
 } from "@/lib/dominio";
 import type { TareaKanban, TipoEntregableMin } from "./KanbanBoard";
 import { X } from "lucide-react";
@@ -41,6 +43,10 @@ export function TareaModal({
     tarea?.criterioTerminado ?? ""
   );
   const [observaciones, setObservaciones] = useState(tarea?.observaciones ?? "");
+  // Datos del backlog (solo al crear una tarea nueva)
+  const [areaSolicitante, setAreaSolicitante] = useState("");
+  const [impacto, setImpacto] = useState("");
+  const [esfuerzo, setEsfuerzo] = useState("");
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -53,6 +59,9 @@ export function TareaModal({
       descripcion,
       estado,
       prioridad,
+      areaSolicitante,
+      impacto: impacto || null,
+      esfuerzo: esfuerzo || null,
       responsableId: responsableId || null,
       segundaPersonaId: segundaPersonaId || null,
       fechaInicio: fechaInicio || null,
@@ -257,6 +266,54 @@ export function TareaModal({
               onChange={(e) => setObservaciones(e.target.value)}
             />
           </div>
+
+          {/* Datos del backlog: solo al crear (la tarea genera su reflejo en el Backlog) */}
+          {!tarea && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="mb-2 text-xs font-medium text-slate-500">
+                Datos para el Backlog (esta tarea se registra automáticamente allí)
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <Label>Área solicitante</Label>
+                  <Input
+                    value={areaSolicitante}
+                    onChange={(e) => setAreaSolicitante(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Impacto</Label>
+                  <select
+                    className={selectCls}
+                    value={impacto}
+                    onChange={(e) => setImpacto(e.target.value)}
+                  >
+                    <option value="">—</option>
+                    {ESCALAS.map((s) => (
+                      <option key={s} value={s}>
+                        {ETIQUETA_ESCALA[s]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label>Esfuerzo</Label>
+                  <select
+                    className={selectCls}
+                    value={esfuerzo}
+                    onChange={(e) => setEsfuerzo(e.target.value)}
+                  >
+                    <option value="">—</option>
+                    {ESCALAS.map((s) => (
+                      <option key={s} value={s}>
+                        {ETIQUETA_ESCALA[s]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

@@ -36,6 +36,9 @@ export async function crearBacklogParaTarea(opts: {
   descripcion?: string | null;
   estado: EstadoTarea;
   creadoPorId: number;
+  areaSolicitante?: string | null;
+  impacto?: "alto" | "medio" | "bajo" | null;
+  esfuerzo?: "alto" | "medio" | "bajo" | null;
 }): Promise<void> {
   const codigo = await proximoCodigo();
   const [item] = await db
@@ -44,6 +47,9 @@ export async function crearBacklogParaTarea(opts: {
       codigo,
       pedido: opts.titulo,
       decisionQueApoya: opts.descripcion ?? "",
+      areaSolicitante: opts.areaSolicitante ?? "",
+      impacto: opts.impacto ?? null,
+      esfuerzo: opts.esfuerzo ?? null,
       estado: estadoBacklogDesdeTarea(opts.estado),
       creadoPorId: opts.creadoPorId,
     })

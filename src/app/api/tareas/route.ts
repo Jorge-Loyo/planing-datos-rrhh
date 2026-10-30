@@ -82,12 +82,16 @@ export async function POST(req: NextRequest) {
   // Opción B: si la tarea NO proviene de un item de backlog, se crea su reflejo
   // en el Backlog para que éste muestre todo lo que el equipo tiene en marcha.
   if (!backlogIdOrigen) {
+    const escalas = ["alto", "medio", "bajo"];
     await crearBacklogParaTarea({
       tareaId: creada.id,
       titulo,
       descripcion: limpiarTexto(body.descripcion),
       estado,
       creadoPorId: sesion.id,
+      areaSolicitante: limpiarTexto(body.areaSolicitante) || null,
+      impacto: escalas.includes(body.impacto) ? body.impacto : null,
+      esfuerzo: escalas.includes(body.esfuerzo) ? body.esfuerzo : null,
     });
   }
 
