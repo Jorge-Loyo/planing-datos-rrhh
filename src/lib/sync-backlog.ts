@@ -3,7 +3,7 @@
 // en el Backlog sigue el estado de la tarea.
 import { db } from "@/db";
 import { backlog, tareas } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 import type { EstadoTarea, EstadoBacklog } from "@/lib/dominio";
 
 // Mapeo estado de tarea -> estado de backlog
@@ -69,4 +69,28 @@ export async function sincronizarBacklogDeTarea(tareaId: number): Promise<void> 
       actualizadoEn: new Date(),
     })
     .where(eq(backlog.id, tarea.backlogId));
+}
+
+// Sincroniza el estado del backlog de varias tareas, a partir del estado destino
+// conocido. Lee los backlogId en una sola consulta y actualiza solo los vinculados.
+export async function sincronizarBacklogPorEstado(
+  tareaIds: number[],
+  estado: EstadoTarea
+): Promise<void> {
+  if (tareaIds.length === 0) return;
+  const estadoBl = estadoBacklogDesdeTarea(estado);
+  // Traer los backlogId de esas tareas en una sola consulta
+  const filas = await db
+    .select({ backlogId: tareas.backlogId })
+    .from(tareas)
+    .where(inArray(tareas.id, tareaIds));
+  const backlogIds = filas
+    .map((f) => f.backlogId)
+    .filter((x): x is number => x != null);
+  if (backlogIds.length === 0) return;
+  // Un solo UPDATE para todos los backlog vinculados
+  await db
+    .update(backlog)
+    .set({ estado: estadoBl, actualizadoEn: new Date() })
+    .where(inArray(backlog.id, backlogIds));
 }
