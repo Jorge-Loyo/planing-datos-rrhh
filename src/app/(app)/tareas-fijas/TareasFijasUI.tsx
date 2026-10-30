@@ -69,7 +69,7 @@ export function TareasFijasUI({
     const cuando = semana === "actual" ? "esta semana" : "la semana que viene";
     const ok = await confirmar({
       titulo: `Generar tareas de ${cuando}`,
-      mensaje: `Se crearán ${activas.length} tarea(s) en el Kanban (columna Pendiente) con la fecha del día que corresponda. Podés repetirlo, pero se crearán duplicadas.`,
+      mensaje: `Se crearán hasta ${activas.length} tarea(s) en el Kanban (columna Pendiente) con la fecha del día que corresponda. Las que ya se hayan generado esta semana se saltean automáticamente.`,
       textoConfirmar: "Generar",
     });
     if (!ok) return;
@@ -82,7 +82,11 @@ export function TareasFijasUI({
       });
       const data = await res.json();
       if (res.ok) {
-        alert(`Se generaron ${data.creadas} tareas en el Kanban.`);
+        const extra =
+          data.salteadas > 0
+            ? ` (${data.salteadas} ya existían y se saltearon)`
+            : "";
+        alert(`Se generaron ${data.creadas} tareas en el Kanban${extra}.`);
         router.refresh();
       } else {
         alert(data.error || "No se pudieron generar.");

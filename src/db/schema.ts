@@ -281,6 +281,7 @@ export const pedidos = pgTable("pedidos", {
   estado: estadoPedidoEnum("estado").notNull().default("pendiente"),
   fechaPedido: date("fecha_pedido").notNull().defaultNow(),
   fechaNecesaria: date("fecha_necesaria"),
+  fechaResuelto: date("fecha_resuelto"),
   // Vínculo opcional a una tarea del Kanban (si el pedido deriva en una actividad)
   tareaId: integer("tarea_id").references(() => tareas.id),
   nota: text("nota").default(""),

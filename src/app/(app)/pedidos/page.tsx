@@ -25,6 +25,7 @@ export default async function PedidosPage() {
     estado: p.estado,
     fechaPedido: p.fechaPedido,
     fechaNecesaria: p.fechaNecesaria,
+    fechaResuelto: p.fechaResuelto,
     nota: p.nota ?? "",
   }));
 

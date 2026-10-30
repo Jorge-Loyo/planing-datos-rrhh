@@ -21,7 +21,7 @@ import {
   COLOR_ESTADO_PEDIDO,
   type EstadoPedido,
 } from "@/lib/dominio";
-import { Plus, Pencil, Trash2, X, Send, ArrowRight } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Send, ArrowRight, Download } from "lucide-react";
 
 export interface PedidoUI {
   id: number;
@@ -31,6 +31,7 @@ export interface PedidoUI {
   estado: EstadoPedido;
   fechaPedido: string;
   fechaNecesaria: string | null;
+  fechaResuelto: string | null;
   nota: string;
 }
 
@@ -91,6 +92,12 @@ export function PedidosUI({
         titulo="Pedidos"
         descripcion="Solicitudes emergentes que se le hacen a un integrante. Quedan registradas con quién pide, a quién y su estado."
       >
+        <a
+          href="/api/export?tipo=pedidos"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-200"
+        >
+          <Download size={16} /> Exportar CSV
+        </a>
         {puedeEditar && (
           <Button
             onClick={() => {
@@ -169,6 +176,11 @@ export function PedidosUI({
                     <span className="ml-2">· Pedido: {formatearFecha(p.fechaPedido)}</span>
                     {p.fechaNecesaria && (
                       <span>· Necesario: {formatearFecha(p.fechaNecesaria)}</span>
+                    )}
+                    {p.estado === "resuelto" && p.fechaResuelto && (
+                      <span className="text-green-600">
+                        · Resuelto: {formatearFecha(p.fechaResuelto)}
+                      </span>
                     )}
                   </div>
                   {p.nota && (

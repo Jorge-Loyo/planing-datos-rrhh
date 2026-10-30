@@ -22,6 +22,13 @@
       "when": 1793376842543,
       "tag": "0002_pink_albert_cleary",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793380900446,
+      "tag": "0003_bumpy_lionheart",
+      "breakpoints": true
     }
   ]
 }

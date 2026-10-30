@@ -16,7 +16,7 @@ import {
   type EstadoBacklog,
   type EstadoTarea,
 } from "@/lib/dominio";
-import { Plus, Trash2, Search } from "lucide-react";
+import { Plus, Trash2, Search, Download } from "lucide-react";
 
 export interface ItemBacklogUI {
   id: number;
@@ -157,6 +157,12 @@ export function BacklogTabla({
         titulo="Backlog"
         descripcion="Todo pedido entra acá (no por pasillo ni mensajes sueltos). De acá se eligen las prioridades."
       >
+        <a
+          href="/api/export?tipo=backlog"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-200"
+        >
+          <Download size={16} /> Exportar CSV
+        </a>
         {puedeEditar && (
           <Button onClick={() => setForm(!form)}>
             <Plus size={16} /> {form ? "Cancelar" : "Nuevo pedido"}

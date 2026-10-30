@@ -1,7 +1,7 @@
 import { obtenerSesion } from "@/lib/auth";
 import { db } from "@/db";
-import { tareas, prioridades, backlog } from "@/db/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { tareas, prioridades, pedidos } from "@/db/schema";
+import { eq, ne } from "drizzle-orm";
 import { PageHeader, Card, Badge, EmptyState } from "@/components/ui";
 import { formatearFecha, diasRestantes } from "@/lib/utils";
 import {
@@ -18,6 +18,7 @@ import {
   BookOpen,
   FolderOpen,
   AlertTriangle,
+  Send,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -36,13 +37,10 @@ export default async function DashboardPage() {
   const nombre = sesion?.nombre || "";
 
   // Contadores y listas reales
-  const [todasTareas, prioridadesActivas, backlogAbierto] = await Promise.all([
+  const [todasTareas, prioridadesActivas, pedidosAbiertos] = await Promise.all([
     db.select().from(tareas),
     db.select().from(prioridades).where(eq(prioridades.activa, true)),
-    db
-      .select()
-      .from(backlog)
-      .where(and(ne(backlog.estado, "descartado"), ne(backlog.estado, "promovido"))),
+    db.select().from(pedidos).where(ne(pedidos.estado, "resuelto")),
   ]);
 
   const enCurso = todasTareas.filter((t) => t.estado === "en_curso").length;
@@ -58,7 +56,7 @@ export default async function DashboardPage() {
     { label: "Tareas en curso", valor: enCurso, color: "text-brand-600" },
     { label: "Tareas bloqueadas", valor: bloqueadas.length, color: "text-red-600" },
     { label: "Prioridades activas", valor: prioridadesActivas.length, color: "text-slate-900" },
-    { label: "Pedidos en backlog", valor: backlogAbierto.length, color: "text-slate-900" },
+    { label: "Pedidos pendientes", valor: pedidosAbiertos.length, color: "text-yellow-700" },
   ];
 
   return (
@@ -143,6 +141,31 @@ export default async function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Pedidos pendientes */}
+      {pedidosAbiertos.length > 0 && (
+        <div className="mb-8">
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <Send size={18} className="text-yellow-600" /> Pedidos pendientes
+          </h2>
+          <Card className="p-0">
+            <ul className="divide-y divide-slate-100">
+              {pedidosAbiertos.slice(0, 6).map((p) => (
+                <li key={p.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className="flex-1 truncate text-sm text-slate-800">
+                    {p.descripcion}
+                  </span>
+                  {p.fechaNecesaria && (
+                    <span className="text-xs text-slate-500">
+                      Necesario: {formatearFecha(p.fechaNecesaria)}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      )}
 
       {/* Prioridades activas resumidas */}
       {prioridadesActivas.length > 0 && (

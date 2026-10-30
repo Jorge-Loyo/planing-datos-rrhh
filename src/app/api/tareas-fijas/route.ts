@@ -142,12 +142,33 @@ export async function PUT(req: NextRequest) {
     .where(eq(tareas.estado, "pendiente"));
   let orden = (maxOrden[0]?.max ?? 0) + 1;
 
+  // Traer las tareas ya existentes de esa semana generadas desde fijas, para no duplicar.
+  const todasTareas = await db
+    .select({
+      titulo: tareas.titulo,
+      fechaLimite: tareas.fechaLimite,
+      observaciones: tareas.observaciones,
+    })
+    .from(tareas);
+  const yaGeneradas = new Set(
+    todasTareas
+      .filter((t) => (t.observaciones ?? "").includes("tarea fija semanal"))
+      .map((t) => `${t.titulo}__${t.fechaLimite}`)
+  );
+
   let creadas = 0;
+  let salteadas = 0;
   for (const p of plantillas) {
     const dia = (p.diaSemana ?? "lunes") as Dia;
     const fecha = new Date(lunes);
     fecha.setDate(lunes.getDate() + (OFFSET_DIA[dia] ?? 0));
     const fechaLimite = fechaISO(fecha);
+
+    // Si ya existe la misma tarea fija para esa fecha, saltear
+    if (yaGeneradas.has(`${p.titulo}__${fechaLimite}`)) {
+      salteadas++;
+      continue;
+    }
 
     const [tarea] = await db
       .insert(tareas)
@@ -175,5 +196,10 @@ export async function PUT(req: NextRequest) {
     creadas++;
   }
 
-  return NextResponse.json({ ok: true, creadas, lunes: fechaISO(lunes) });
+  return NextResponse.json({
+    ok: true,
+    creadas,
+    salteadas,
+    lunes: fechaISO(lunes),
+  });
 }

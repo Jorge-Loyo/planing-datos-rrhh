@@ -1,0 +1,1 @@
+ALTER TABLE "pedidos" ADD COLUMN "fecha_resuelto" date;

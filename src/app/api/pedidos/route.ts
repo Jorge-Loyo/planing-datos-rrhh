@@ -71,8 +71,15 @@ export async function PATCH(req: NextRequest) {
   if (body.solicitanteId !== undefined)
     cambios.solicitanteId = idOnull(body.solicitanteId);
   if (body.asignadoId !== undefined) cambios.asignadoId = idOnull(body.asignadoId);
-  if (body.estado !== undefined && ESTADOS_PEDIDO.includes(body.estado as EstadoPedido))
+  if (body.estado !== undefined && ESTADOS_PEDIDO.includes(body.estado as EstadoPedido)) {
     cambios.estado = body.estado;
+    // Registrar/limpiar la fecha de resolución automáticamente
+    if (body.estado === "resuelto") {
+      cambios.fechaResuelto = new Date().toISOString().slice(0, 10);
+    } else {
+      cambios.fechaResuelto = null;
+    }
+  }
   if (body.fechaNecesaria !== undefined)
     cambios.fechaNecesaria = fechaOnull(body.fechaNecesaria);
   if (body.nota !== undefined) cambios.nota = txt(body.nota);
