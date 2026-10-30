@@ -264,6 +264,34 @@ export const tareasFijas = pgTable("tareas_fijas", {
 });
 
 // ---------------------------------------------------------------------------
+// Pedidos: solicitudes emergentes que se le hacen a un integrante
+// ---------------------------------------------------------------------------
+
+export const estadoPedidoEnum = pgEnum("estado_pedido", [
+  "pendiente",
+  "en_proceso",
+  "resuelto",
+]);
+
+export const pedidos = pgTable("pedidos", {
+  id: serial("id").primaryKey(),
+  descripcion: text("descripcion").notNull(),
+  solicitanteId: integer("solicitante_id").references(() => usuarios.id),
+  asignadoId: integer("asignado_id").references(() => usuarios.id),
+  estado: estadoPedidoEnum("estado").notNull().default("pendiente"),
+  fechaPedido: date("fecha_pedido").notNull().defaultNow(),
+  fechaNecesaria: date("fecha_necesaria"),
+  // Vínculo opcional a una tarea del Kanban (si el pedido deriva en una actividad)
+  tareaId: integer("tarea_id").references(() => tareas.id),
+  nota: text("nota").default(""),
+  creadoPorId: integer("creado_por_id").references(() => usuarios.id),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+  actualizadoEn: timestamp("actualizado_en", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
 // Relaciones (para consultas con joins comodos)
 // ---------------------------------------------------------------------------
 
@@ -333,3 +361,4 @@ export type VersionRecurso = typeof versionesRecurso.$inferSelect;
 export type TipoEntregable = typeof tiposEntregable.$inferSelect;
 export type CriterioTerminado = typeof criteriosTerminado.$inferSelect;
 export type TareaFija = typeof tareasFijas.$inferSelect;
+export type Pedido = typeof pedidos.$inferSelect;

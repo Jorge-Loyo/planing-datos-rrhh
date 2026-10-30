@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Label, Card, Badge, PageHeader, ReadOnlyNotice } from "@/components/ui";
 import { useConfirm } from "@/components/confirm";
 import { formatearFecha } from "@/lib/utils";
-import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import {
   ESCALAS,
   ETIQUETA_ESCALA,
@@ -13,14 +12,11 @@ import {
   COLOR_ESTADO_BACKLOG,
   ETIQUETA_ESTADO,
   COLOR_ESTADO,
-  NIVELES_AFICHE,
-  ETIQUETA_PRIORIDAD,
   type Escala,
   type EstadoBacklog,
   type EstadoTarea,
-  type NivelAfiche,
 } from "@/lib/dominio";
-import { Plus, Trash2, ArrowUpRight, Search, X } from "lucide-react";
+import { Plus, Trash2, Search } from "lucide-react";
 
 export interface ItemBacklogUI {
   id: number;
@@ -42,12 +38,10 @@ type OrdenCampo = "reciente" | "impacto" | "esfuerzo";
 
 export function BacklogTabla({
   itemsIniciales,
-  usuarios,
   puedeEditar,
   puedeCoordinar,
 }: {
   itemsIniciales: ItemBacklogUI[];
-  usuarios: UsuarioMin[];
   puedeEditar: boolean;
   puedeCoordinar: boolean;
 }) {
@@ -66,9 +60,6 @@ export function BacklogTabla({
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<string>("");
   const [orden, setOrden] = useState<OrdenCampo>("reciente");
-
-  // Modal de promoción
-  const [promoverItem, setPromoverItem] = useState<ItemBacklogUI | null>(null);
 
   const selectCls =
     "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
@@ -301,9 +292,7 @@ export function BacklogTabla({
                 <th className="px-4 py-3 font-medium">Ingreso</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
                 <th className="px-4 py-3 font-medium">En Kanban</th>
-                {(puedeEditar || puedeCoordinar) && (
-                  <th className="px-4 py-3 font-medium">Acciones</th>
-                )}
+                {puedeEditar && <th className="px-4 py-3 font-medium">Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -362,28 +351,15 @@ export function BacklogTabla({
                       <span className="text-xs text-slate-400">—</span>
                     )}
                   </td>
-                  {(puedeEditar || puedeCoordinar) && (
+                  {puedeEditar && (
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {puedeCoordinar && it.estado !== "promovido" && (
-                          <button
-                            onClick={() => setPromoverItem(it)}
-                            className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline"
-                            title="Promover a tarea del Kanban"
-                          >
-                            <ArrowUpRight size={14} /> A tarea
-                          </button>
-                        )}
-                        {puedeEditar && (
-                          <button
-                            onClick={() => eliminar(it.id)}
-                            className="text-slate-400 hover:text-red-600"
-                            title="Eliminar"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
+                      <button
+                        onClick={() => eliminar(it.id)}
+                        className="text-slate-400 hover:text-red-600"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </td>
                   )}
                 </tr>
@@ -403,147 +379,8 @@ export function BacklogTabla({
         </Card>
       )}
 
-      {promoverItem && (
-        <PromoverModal
-          item={promoverItem}
-          usuarios={usuarios}
-          onCerrar={() => setPromoverItem(null)}
-          onPromovido={() => {
-            setPromoverItem(null);
-            router.refresh();
-          }}
-        />
-      )}
     </div>
   );
 }
 
-function PromoverModal({
-  item,
-  usuarios,
-  onCerrar,
-  onPromovido,
-}: {
-  item: ItemBacklogUI;
-  usuarios: UsuarioMin[];
-  onCerrar: () => void;
-  onPromovido: () => void;
-}) {
-  const [responsableId, setResponsable] = useState("");
-  const [fechaLimite, setFecha] = useState("");
-  const [prioridad, setPrioridad] = useState<string>("sin_prioridad");
-  const [error, setError] = useState("");
-  const [guardando, setGuardando] = useState(false);
 
-  const selectCls =
-    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
-
-  async function promover(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setGuardando(true);
-    try {
-      const res = await fetch("/api/backlog", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: item.id,
-          responsableId: responsableId || null,
-          fechaLimite: fechaLimite || null,
-          prioridad,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "No se pudo promover.");
-        return;
-      }
-      onPromovido();
-    } catch {
-      setError("Error de conexión.");
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4"
-      onClick={onCerrar}
-    >
-      <div
-        className="my-8 w-full max-w-md rounded-xl bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h2 className="text-lg font-semibold text-slate-900">Promover a tarea</h2>
-          <button onClick={onCerrar} className="text-slate-400 hover:text-slate-600">
-            <X size={20} />
-          </button>
-        </div>
-        <form onSubmit={promover} className="space-y-4 p-5">
-          <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            {item.pedido}
-          </div>
-          <p className="text-xs text-slate-500">
-            Se creará una tarea en la columna <strong>Pendiente</strong> del Kanban. Podés
-            asignar responsable, fecha y prioridad ahora (o dejarlo para después).
-          </p>
-          <div>
-            <Label>Responsable</Label>
-            <select
-              className={selectCls}
-              value={responsableId}
-              onChange={(e) => setResponsable(e.target.value)}
-            >
-              <option value="">Sin asignar</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {nombreUsuario(u)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label>Fecha límite</Label>
-              <Input
-                type="date"
-                value={fechaLimite}
-                onChange={(e) => setFecha(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Prioridad</Label>
-              <select
-                className={selectCls}
-                value={prioridad}
-                onChange={(e) => setPrioridad(e.target.value)}
-              >
-                <option value="sin_prioridad">Sin prioridad</option>
-                {NIVELES_AFICHE.map((n) => (
-                  <option key={n} value={n}>
-                    {ETIQUETA_PRIORIDAD[n as NivelAfiche]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {error && (
-            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-          <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
-            <Button type="button" variant="secondary" onClick={onCerrar}>
-              Cancelar
-            </Button>
-            <Button type="submit" cargando={guardando}>
-              Promover a tarea
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}

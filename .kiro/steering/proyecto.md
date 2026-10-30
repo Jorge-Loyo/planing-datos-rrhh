@@ -56,4 +56,17 @@ TODAS LAS ETAPAS COMPLETAS. La app está funcional de punta a punta contra Neon.
 ## Modelo de datos (resumen)
 
 usuarios, backlog, prioridades, tareas, reuniones, conceptos, tipos_entregable,
-criterios_terminado, recursos, versiones_recurso. Ver `src/db/schema.ts`.
+criterios_terminado, recursos, versiones_recurso, tareas_fijas, pedidos.
+Ver `src/db/schema.ts`.
+
+## Vínculo Kanban-Backlog (opción B) y Pedidos
+
+- Opción B activa: cada tarea del Kanban genera y sincroniza su reflejo en el
+  Backlog (ver `src/lib/sync-backlog.ts`). El Backlog es el espejo del Kanban.
+- El botón "Promover a tarea" del Backlog FUE ELIMINADO (causaba duplicados con
+  la opción B). El flujo ahora es solo Kanban -> Backlog.
+- Pedidos (`/pedidos`): solicitudes emergentes a un integrante (solicitante,
+  asignado, estado pendiente/en_proceso/resuelto, fecha necesaria). Tabla `pedidos`.
+- Tareas fijas (`/tareas-fijas`): plantillas semanales, botón genera tareas en Kanban.
+- PENDIENTE: potenciar "Carga del equipo" para sumar por persona: tareas del
+  Kanban + pedidos asignados + tareas fijas + historial de lo terminado.

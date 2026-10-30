@@ -120,3 +120,21 @@ export const ETIQUETA_DIA: Record<DiaSemana, string> = {
   jueves: "Jueves",
   viernes: "Viernes",
 };
+
+export const ESTADOS_PEDIDO = ["pendiente", "en_proceso", "resuelto"] as const;
+export type EstadoPedido = (typeof ESTADOS_PEDIDO)[number];
+
+export const ETIQUETA_ESTADO_PEDIDO: Record<EstadoPedido, string> = {
+  pendiente: "Pendiente",
+  en_proceso: "En proceso",
+  resuelto: "Resuelto",
+};
+
+export const COLOR_ESTADO_PEDIDO: Record<
+  EstadoPedido,
+  "slate" | "blue" | "green" | "yellow" | "red"
+> = {
+  pendiente: "yellow",
+  en_proceso: "blue",
+  resuelto: "green",
+};
