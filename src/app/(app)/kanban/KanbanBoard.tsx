@@ -10,6 +10,7 @@ import {
   ETIQUETA_ESTADO,
   COLOR_ESTADO,
   ETIQUETA_PRIORIDAD,
+  PRIORIDADES,
   type EstadoTarea,
   type PrioridadTarea,
 } from "@/lib/dominio";
@@ -31,13 +32,21 @@ export interface TareaKanban {
   orden: number;
 }
 
+export interface TipoEntregableMin {
+  id: number;
+  nombre: string;
+  criterios: string[];
+}
+
 export function KanbanBoard({
   tareasIniciales,
   usuarios,
+  tiposEntregable,
   puedeEditar,
 }: {
   tareasIniciales: TareaKanban[];
   usuarios: UsuarioMin[];
+  tiposEntregable: TipoEntregableMin[];
   puedeEditar: boolean;
 }) {
   const router = useRouter();
@@ -47,13 +56,32 @@ export function KanbanBoard({
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editando, setEditando] = useState<TareaKanban | null>(null);
 
+  // Filtros
+  const [filtroResponsable, setFiltroResponsable] = useState<string>("");
+  const [filtroPrioridad, setFiltroPrioridad] = useState<string>("");
+
   const mapaUsuarios = new Map(usuarios.map((u) => [u.id, u]));
+
+  function pasaFiltro(t: TareaKanban): boolean {
+    if (filtroResponsable) {
+      if (filtroResponsable === "sin" && t.responsableId !== null) return false;
+      if (
+        filtroResponsable !== "sin" &&
+        t.responsableId !== Number(filtroResponsable)
+      )
+        return false;
+    }
+    if (filtroPrioridad && t.prioridad !== filtroPrioridad) return false;
+    return true;
+  }
 
   function tareasDe(estado: EstadoTarea) {
     return tareas
-      .filter((t) => t.estado === estado)
+      .filter((t) => t.estado === estado && pasaFiltro(t))
       .sort((a, b) => a.orden - b.orden);
   }
+
+  const hayFiltro = filtroResponsable !== "" || filtroPrioridad !== "";
 
   async function persistirColumna(estado: EstadoTarea, lista: TareaKanban[]) {
     await fetch("/api/tareas/mover", {
@@ -114,6 +142,51 @@ export function KanbanBoard({
         )}
       </PageHeader>
 
+      {/* Filtros */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <select
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          value={filtroResponsable}
+          onChange={(e) => setFiltroResponsable(e.target.value)}
+        >
+          <option value="">Todos los responsables</option>
+          <option value="sin">Sin asignar</option>
+          {usuarios.map((u) => (
+            <option key={u.id} value={u.id}>
+              {nombreUsuario(u)}
+            </option>
+          ))}
+        </select>
+        <select
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          value={filtroPrioridad}
+          onChange={(e) => setFiltroPrioridad(e.target.value)}
+        >
+          <option value="">Todas las prioridades</option>
+          {PRIORIDADES.map((p) => (
+            <option key={p} value={p}>
+              {ETIQUETA_PRIORIDAD[p]}
+            </option>
+          ))}
+        </select>
+        {hayFiltro && (
+          <>
+            <button
+              onClick={() => {
+                setFiltroResponsable("");
+                setFiltroPrioridad("");
+              }}
+              className="text-sm text-slate-500 hover:underline"
+            >
+              Limpiar filtros
+            </button>
+            <span className="text-xs text-slate-400">
+              (con filtros activos el arrastre está desactivado)
+            </span>
+          </>
+        )}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {ESTADOS_TAREA.map((estado) => {
           const lista = tareasDe(estado);
@@ -121,12 +194,12 @@ export function KanbanBoard({
             <div
               key={estado}
               onDragOver={(e) => {
-                if (!puedeEditar) return;
+                if (!puedeEditar || hayFiltro) return;
                 e.preventDefault();
                 setColumnaSobre(estado);
               }}
               onDragLeave={() => setColumnaSobre(null)}
-              onDrop={() => onDrop(estado)}
+              onDrop={() => !hayFiltro && onDrop(estado)}
               className={cn(
                 "rounded-xl bg-slate-100 p-3 transition",
                 columnaSobre === estado && "ring-2 ring-brand-400 bg-brand-50"
@@ -152,7 +225,7 @@ export function KanbanBoard({
                   return (
                     <div
                       key={t.id}
-                      draggable={puedeEditar}
+                      draggable={puedeEditar && !hayFiltro}
                       onDragStart={() => setArrastrada(t.id)}
                       onDragEnd={() => setArrastrada(null)}
                       className={cn(
@@ -245,6 +318,7 @@ export function KanbanBoard({
         <TareaModal
           tarea={editando}
           usuarios={usuarios}
+          tiposEntregable={tiposEntregable}
           onCerrar={() => setModalAbierto(false)}
           onGuardado={() => {
             setModalAbierto(false);

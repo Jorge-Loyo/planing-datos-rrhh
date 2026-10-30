@@ -1,18 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Label, Card, Badge, PageHeader } from "@/components/ui";
 import { formatearFecha } from "@/lib/utils";
+import { nombreUsuario, type UsuarioMin } from "@/lib/usuarios";
 import {
   ESCALAS,
   ETIQUETA_ESCALA,
   ETIQUETA_ESTADO_BACKLOG,
   COLOR_ESTADO_BACKLOG,
+  NIVELES_AFICHE,
+  ETIQUETA_PRIORIDAD,
   type Escala,
   type EstadoBacklog,
+  type NivelAfiche,
 } from "@/lib/dominio";
-import { Plus, Trash2, ArrowUpRight } from "lucide-react";
+import { Plus, Trash2, ArrowUpRight, Search, X } from "lucide-react";
 
 export interface ItemBacklogUI {
   id: number;
@@ -26,17 +30,23 @@ export interface ItemBacklogUI {
   fechaIngreso: string;
 }
 
+// Peso para ordenar por impacto/esfuerzo
+const PESO: Record<Escala, number> = { alto: 3, medio: 2, bajo: 1 };
+
+type OrdenCampo = "reciente" | "impacto" | "esfuerzo";
+
 export function BacklogTabla({
   itemsIniciales,
+  usuarios,
   puedeEditar,
   puedeCoordinar,
 }: {
   itemsIniciales: ItemBacklogUI[];
+  usuarios: UsuarioMin[];
   puedeEditar: boolean;
   puedeCoordinar: boolean;
 }) {
   const router = useRouter();
-  const [items] = useState(itemsIniciales);
   const [form, setForm] = useState(false);
   const [pedido, setPedido] = useState("");
   const [areaSolicitante, setArea] = useState("");
@@ -45,8 +55,36 @@ export function BacklogTabla({
   const [esfuerzo, setEsfuerzo] = useState<string>("");
   const [error, setError] = useState("");
 
+  // Buscador / filtros / orden
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<string>("");
+  const [orden, setOrden] = useState<OrdenCampo>("reciente");
+
+  // Modal de promoción
+  const [promoverItem, setPromoverItem] = useState<ItemBacklogUI | null>(null);
+
   const selectCls =
     "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
+
+  const visibles = useMemo(() => {
+    let lista = itemsIniciales.filter(
+      (it) =>
+        it.pedido.toLowerCase().includes(busqueda.toLowerCase()) ||
+        it.codigo.toLowerCase().includes(busqueda.toLowerCase()) ||
+        it.areaSolicitante.toLowerCase().includes(busqueda.toLowerCase())
+    );
+    if (filtroEstado) lista = lista.filter((it) => it.estado === filtroEstado);
+    if (orden === "impacto") {
+      lista = [...lista].sort(
+        (a, b) => (b.impacto ? PESO[b.impacto] : 0) - (a.impacto ? PESO[a.impacto] : 0)
+      );
+    } else if (orden === "esfuerzo") {
+      lista = [...lista].sort(
+        (a, b) => (a.esfuerzo ? PESO[a.esfuerzo] : 99) - (b.esfuerzo ? PESO[b.esfuerzo] : 99)
+      );
+    }
+    return lista;
+  }, [itemsIniciales, busqueda, filtroEstado, orden]);
 
   async function crear(e: React.FormEvent) {
     e.preventDefault();
@@ -88,23 +126,6 @@ export function BacklogTabla({
       return;
     }
     router.refresh();
-  }
-
-  async function promover(id: number) {
-    if (!confirm("¿Promover este pedido a una tarea del Kanban (columna Pendiente)?"))
-      return;
-    const res = await fetch("/api/backlog", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    const d = await res.json();
-    if (res.ok) {
-      alert("Pedido promovido a tarea. Lo vas a ver en el Kanban.");
-      router.refresh();
-    } else {
-      alert(d.error || "No se pudo promover.");
-    }
   }
 
   async function eliminar(id: number) {
@@ -199,10 +220,50 @@ export function BacklogTabla({
         </Card>
       )}
 
-      {items.length === 0 ? (
+      {/* Buscador, filtro y orden */}
+      {itemsIniciales.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[220px] flex-1">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <Input
+              className="pl-9"
+              placeholder="Buscar pedido, código o área..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
+          <select
+            className={selectCls + " max-w-[180px]"}
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+          >
+            <option value="">Todos los estados</option>
+            {ESTADOS.map((s) => (
+              <option key={s} value={s}>
+                {ETIQUETA_ESTADO_BACKLOG[s]}
+              </option>
+            ))}
+          </select>
+          <select
+            className={selectCls + " max-w-[180px]"}
+            value={orden}
+            onChange={(e) => setOrden(e.target.value as OrdenCampo)}
+          >
+            <option value="reciente">Más recientes</option>
+            <option value="impacto">Mayor impacto</option>
+            <option value="esfuerzo">Menor esfuerzo</option>
+          </select>
+        </div>
+      )}
+
+      {itemsIniciales.length === 0 ? (
         <Card>
           <p className="text-center text-sm text-slate-500">
-            El backlog está vacío. {puedeEditar && "Agregá el primer pedido con el botón de arriba."}
+            El backlog está vacío.{" "}
+            {puedeEditar && "Agregá el primer pedido con el botón de arriba."}
           </p>
         </Card>
       ) : (
@@ -223,7 +284,7 @@ export function BacklogTabla({
               </tr>
             </thead>
             <tbody>
-              {items.map((it) => (
+              {visibles.map((it) => (
                 <tr key={it.id} className="border-b border-slate-100 align-top">
                   <td className="px-4 py-3 font-mono text-xs text-slate-500">
                     {it.codigo}
@@ -274,7 +335,7 @@ export function BacklogTabla({
                       <div className="flex items-center gap-2">
                         {puedeCoordinar && it.estado !== "promovido" && (
                           <button
-                            onClick={() => promover(it.id)}
+                            onClick={() => setPromoverItem(it)}
                             className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline"
                             title="Promover a tarea del Kanban"
                           >
@@ -295,10 +356,162 @@ export function BacklogTabla({
                   )}
                 </tr>
               ))}
+              {visibles.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-6 text-center text-sm text-slate-400"
+                  >
+                    No hay pedidos que coincidan con el filtro.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </Card>
       )}
+
+      {promoverItem && (
+        <PromoverModal
+          item={promoverItem}
+          usuarios={usuarios}
+          onCerrar={() => setPromoverItem(null)}
+          onPromovido={() => {
+            setPromoverItem(null);
+            router.refresh();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PromoverModal({
+  item,
+  usuarios,
+  onCerrar,
+  onPromovido,
+}: {
+  item: ItemBacklogUI;
+  usuarios: UsuarioMin[];
+  onCerrar: () => void;
+  onPromovido: () => void;
+}) {
+  const [responsableId, setResponsable] = useState("");
+  const [fechaLimite, setFecha] = useState("");
+  const [prioridad, setPrioridad] = useState<string>("sin_prioridad");
+  const [error, setError] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
+  const selectCls =
+    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
+
+  async function promover(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setGuardando(true);
+    try {
+      const res = await fetch("/api/backlog", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: item.id,
+          responsableId: responsableId || null,
+          fechaLimite: fechaLimite || null,
+          prioridad,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "No se pudo promover.");
+        return;
+      }
+      onPromovido();
+    } catch {
+      setError("Error de conexión.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4"
+      onClick={onCerrar}
+    >
+      <div
+        className="my-8 w-full max-w-md rounded-xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <h2 className="text-lg font-semibold text-slate-900">Promover a tarea</h2>
+          <button onClick={onCerrar} className="text-slate-400 hover:text-slate-600">
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={promover} className="space-y-4 p-5">
+          <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            {item.pedido}
+          </div>
+          <p className="text-xs text-slate-500">
+            Se creará una tarea en la columna <strong>Pendiente</strong> del Kanban. Podés
+            asignar responsable, fecha y prioridad ahora (o dejarlo para después).
+          </p>
+          <div>
+            <Label>Responsable</Label>
+            <select
+              className={selectCls}
+              value={responsableId}
+              onChange={(e) => setResponsable(e.target.value)}
+            >
+              <option value="">Sin asignar</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {nombreUsuario(u)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Fecha límite</Label>
+              <Input
+                type="date"
+                value={fechaLimite}
+                onChange={(e) => setFecha(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Prioridad</Label>
+              <select
+                className={selectCls}
+                value={prioridad}
+                onChange={(e) => setPrioridad(e.target.value)}
+              >
+                <option value="sin_prioridad">Sin prioridad</option>
+                {NIVELES_AFICHE.map((n) => (
+                  <option key={n} value={n}>
+                    {ETIQUETA_PRIORIDAD[n as NivelAfiche]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {error && (
+            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
+            <Button type="button" variant="secondary" onClick={onCerrar}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={guardando}>
+              {guardando ? "Promoviendo..." : "Promover a tarea"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

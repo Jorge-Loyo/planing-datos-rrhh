@@ -9,17 +9,19 @@ import {
   PRIORIDADES,
   ETIQUETA_PRIORIDAD,
 } from "@/lib/dominio";
-import type { TareaKanban } from "./KanbanBoard";
+import type { TareaKanban, TipoEntregableMin } from "./KanbanBoard";
 import { X } from "lucide-react";
 
 export function TareaModal({
   tarea,
   usuarios,
+  tiposEntregable,
   onCerrar,
   onGuardado,
 }: {
   tarea: TareaKanban | null;
   usuarios: UsuarioMin[];
+  tiposEntregable: TipoEntregableMin[];
   onCerrar: () => void;
   onGuardado: () => void;
 }) {
@@ -211,9 +213,35 @@ export function TareaModal({
 
           <div>
             <Label>Criterio de terminado</Label>
+            {tiposEntregable.length > 0 && (
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-xs text-slate-500">Usar checklist de:</span>
+                <select
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+                  value=""
+                  onChange={(e) => {
+                    const tipo = tiposEntregable.find(
+                      (t) => t.id === Number(e.target.value)
+                    );
+                    if (!tipo) return;
+                    const texto = tipo.criterios.map((c) => `- ${c}`).join("\n");
+                    setCriterioTerminado((prev) =>
+                      prev.trim() ? prev + "\n" + texto : texto
+                    );
+                  }}
+                >
+                  <option value="">Elegir tipo de entregable...</option>
+                  {tiposEntregable.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.nombre} ({t.criterios.length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <textarea
               className={selectCls}
-              rows={2}
+              rows={3}
               value={criterioTerminado}
               onChange={(e) => setCriterioTerminado(e.target.value)}
               placeholder="Ej: Datos validados, documentado, usuario capacitado"

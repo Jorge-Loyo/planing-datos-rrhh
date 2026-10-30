@@ -3,6 +3,7 @@ import { backlog } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { obtenerSesion } from "@/lib/auth";
 import { puedeEditar, puedeCoordinar } from "@/lib/permisos";
+import { listarUsuariosActivos } from "@/lib/consultas";
 import { BacklogTabla, type ItemBacklogUI } from "./BacklogTabla";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,10 @@ export default async function BacklogPage() {
   const sesion = await obtenerSesion();
   if (!sesion) return null;
 
-  const filas = await db.select().from(backlog).orderBy(desc(backlog.id));
+  const [filas, usuarios] = await Promise.all([
+    db.select().from(backlog).orderBy(desc(backlog.id)),
+    listarUsuariosActivos(),
+  ]);
 
   const items: ItemBacklogUI[] = filas.map((b) => ({
     id: b.id,
@@ -28,6 +32,7 @@ export default async function BacklogPage() {
   return (
     <BacklogTabla
       itemsIniciales={items}
+      usuarios={usuarios}
       puedeEditar={puedeEditar(sesion.rol)}
       puedeCoordinar={puedeCoordinar(sesion.rol)}
     />

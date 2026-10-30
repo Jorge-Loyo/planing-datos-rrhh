@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   if (!pedido) {
     return NextResponse.json(
       { error: "El pedido / idea es obligatorio." },
-      { status: 400 }
+      { status: 400 },
     );
   }
   const codigo = await proximoCodigo();
@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest) {
     if (!p)
       return NextResponse.json(
         { error: "El pedido no puede quedar vacío." },
-        { status: 400 }
+        { status: 400 },
       );
     cambios.pedido = p;
   }
@@ -83,7 +83,8 @@ export async function PATCH(req: NextRequest) {
   if (body.decisionQueApoya !== undefined)
     cambios.decisionQueApoya = txt(body.decisionQueApoya);
   if (body.impacto !== undefined) cambios.impacto = escalaOnull(body.impacto);
-  if (body.esfuerzo !== undefined) cambios.esfuerzo = escalaOnull(body.esfuerzo);
+  if (body.esfuerzo !== undefined)
+    cambios.esfuerzo = escalaOnull(body.esfuerzo);
   if (body.estado !== undefined && ESTADOS_BACKLOG.includes(body.estado)) {
     // Promover a prioridad/aprobar es potestad de coordinación
     if (
@@ -91,8 +92,11 @@ export async function PATCH(req: NextRequest) {
       !puedeCoordinar(sesion.rol)
     ) {
       return NextResponse.json(
-        { error: "Solo un líder o administrador puede aprobar o promover un pedido." },
-        { status: 403 }
+        {
+          error:
+            "Solo un líder o administrador puede aprobar o promover un pedido.",
+        },
+        { status: 403 },
       );
     }
     cambios.estado = body.estado;
@@ -121,7 +125,7 @@ export async function PUT(req: NextRequest) {
   if (!sesion || !puedeCoordinar(sesion.rol)) {
     return NextResponse.json(
       { error: "Solo un líder o administrador puede promover a tarea." },
-      { status: 403 }
+      { status: 403 },
     );
   }
   const body = await req.json();
@@ -141,12 +145,27 @@ export async function PUT(req: NextRequest) {
     .where(eq(tareas.estado, "pendiente"));
   const orden = (maxOrden[0]?.max ?? 0) + 1;
 
+  // Datos opcionales que el líder puede definir al promover
+  const responsableId =
+    Number.isInteger(Number(body.responsableId)) &&
+    Number(body.responsableId) > 0
+      ? Number(body.responsableId)
+      : null;
+  const fechaLimite = txt(body.fechaLimite) || null;
+  const prioridadValida = ["sin_prioridad", "p1", "p2", "p3", "p4", "p5"];
+  const prioridad = prioridadValida.includes(body.prioridad)
+    ? body.prioridad
+    : "sin_prioridad";
+
   const [tarea] = await db
     .insert(tareas)
     .values({
       titulo: item.pedido,
       descripcion: item.decisionQueApoya ?? "",
       estado: "pendiente",
+      prioridad,
+      responsableId,
+      fechaLimite,
       backlogId: item.id,
       orden,
       creadoPorId: sesion.id,
